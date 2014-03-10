@@ -1,24 +1,15 @@
 package io.vertx.mqtt.message;
 
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
-public final class Subscribe extends MqttMessage {
-    private final int messageId;
+public final class Subscribe extends MqttIdBasedMessage<Subscribe> {
+    private List<TopicQosPair> topics = Collections.emptyList();
 
-    private final List<TopicQosPair> topics;
-    public Subscribe(boolean dup, byte qos, boolean retain, int messageId, TopicQosPair... topics) {
-        this(dup, qos, retain, messageId, Arrays.asList(topics));
-    }
 
-    public Subscribe(boolean dup, byte qos, boolean retain, int messageId, List<TopicQosPair> topics) {
-        super(dup, qos, retain);
-        this.messageId = messageId;
-        this.topics = topics;
-    }
-
-    public int messageId() {
-        return messageId;
+    public Subscribe setTopicQosPairs(List<TopicQosPair> topics) {
+        this.topics = Collections.unmodifiableList(topics);
+        return this;
     }
 
     public List<TopicQosPair> topicQosPairs() {
@@ -26,15 +17,15 @@ public final class Subscribe extends MqttMessage {
     }
 
     public static final class TopicQosPair {
-        private final byte qos;
+        private final Qos qos;
         private final String topic;
 
-        public TopicQosPair(byte qos, String topic) {
+        public TopicQosPair(Qos qos, String topic) {
             this.qos = qos;
             this.topic = topic;
         }
 
-        public byte qos() {
+        public Qos qos() {
             return qos;
         }
 

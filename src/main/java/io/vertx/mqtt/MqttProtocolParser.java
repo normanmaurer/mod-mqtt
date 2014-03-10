@@ -10,6 +10,8 @@ import io.vertx.mqtt.message.PubAck;
 import io.vertx.mqtt.message.PubComp;
 import io.vertx.mqtt.message.PubRel;
 import io.vertx.mqtt.message.PubReq;
+import io.vertx.mqtt.message.Publish;
+import io.vertx.mqtt.message.SubAck;
 import io.vertx.mqtt.message.Subscribe;
 import io.vertx.mqtt.message.UnsubAck;
 import io.vertx.mqtt.message.Unsubscribe;
@@ -54,8 +56,12 @@ public final class MqttProtocolParser implements Handler<Buffer> {
                 if (received.length() - read >= remainingLength) {
                     // create new message
                     read += remainingLength;
+                    MqttMessage.Qos qos = MqttMessage.Qos.valueOf(qosLevel);
                     MqttMessage message = createMessage(
-                            received, offset, messageType, dupFlag, qosLevel, retainFlag, remainingLength);
+                            received, offset, messageType, remainingLength, qos);
+                    message.setDup(dupFlag);
+                    message.setQos(qos);
+                    message.setRetain(retainFlag);
                     handler.handle(message);
                 } else {
                     break;
@@ -74,12 +80,13 @@ public final class MqttProtocolParser implements Handler<Buffer> {
     }
 
     private MqttMessage createMessage(
-            Buffer buffer, int offset, byte messageType, boolean dup, byte qos,boolean retain, int remainingLength) {
+            Buffer buffer, int offset, byte messageType, int remainingLength, MqttMessage.Qos qos) {
         switch (messageType) {
             case MqttMessage.CONNACK:
                 // first byte is skipped as it is reserved
-                byte code = buffer.getByte(offset + 1);
-                return new ConnAck(dup, qos, retain, Connect.ConnectReturnCode.valueOf(code));
+                byte code = buffer.getByte(++offset);
+                ConnAck ack = new ConnAck();
+                return ack.setReturnCode(Connect.ConnectReturnCode.valueOf(code));
             case MqttMessage.CONNECT:
                 return createConnect(buffer, offset, remainingLength);
             case MqttMessage.DISCONNECT:
@@ -90,21 +97,50 @@ public final class MqttProtocolParser implements Handler<Buffer> {
                 return PING_RESP;
             case MqttMessage.PUBACK:
                 int pubId = buffer.getShort(offset) & 0xffff;
-                return new PubAck(pubId);
+                PubAck pubAck = new PubAck();
+                return pubAck.setMessageId(pubId);
             case MqttMessage.PUBCOMP:
                 int compId = buffer.getShort(offset) & 0xffff;
-                return new PubComp(compId);
+                PubComp comp = new PubComp();
+                return comp.setMessageId(compId);
             case MqttMessage.PUBLISH:
-                 // TODO: Implement me
+                int oldOffset = offset;
+                Publish publish = new Publish();
+                // read topic;
+                int len = buffer.getShort(offset) & 0xffff;
+                offset += 2;
+                String topic = buffer.getString(offset, len, "UTF-8");
+                offset += len;
+                publish.setTopicName(topic);
+
+                switch (qos) {
+                    case LEAST_ONE:
+                    case EXACTLY_ONCE:
+                        publish.setMessageId(buffer.getShort(offset) & 0xffff);
+                        offset += 2;
+                }
+
+                publish.setPayload(buffer.getBuffer(offset, oldOffset + remainingLength));
+                return publish;
             case MqttMessage.PUBREC:
                 int reqId = buffer.getShort(offset) & 0xffff;
                 return new PubReq(reqId);
             case MqttMessage.PUBREL:
                 int relId = buffer.getShort(offset) & 0xffff;
-                return new PubRel(relId);
-
+                PubRel rel = new PubRel();
+                return rel.setMessageId(relId);
             case MqttMessage.SUBACK:
-                // TODO: Implement me
+                SubAck subAck = new SubAck();
+                subAck.setMessageId(buffer.getShort(offset) & 0xffff);
+                offset += 2;
+                remainingLength -= 2;
+
+                List<MqttMessage.Qos> qoses = new ArrayList<>(remainingLength);
+                for (int i = 0; i < remainingLength; i++) {
+                    qoses.add(MqttMessage.Qos.valueOf(buffer.getByte(offset++)));
+                }
+                subAck.setQoses(qoses);
+                return subAck;
             case MqttMessage.SUBSCRIBE:
                 // TODO: Maybe check for valid QOS type ?
                 int subId = buffer.getShort(offset) & 0xffff;
@@ -113,18 +149,20 @@ public final class MqttProtocolParser implements Handler<Buffer> {
                 int end = offset + remainingLength;
                 while (start < end) {
                     // read up the topics;
-                    int len = buffer.getShort(start) & 0xffff;
+                    int l = buffer.getShort(start) & 0xffff;
                     start += 2;
-                    String topic = buffer.getString(start, len, "UTF-8");
-                    start += len;
+                    String t = buffer.getString(start, l, "UTF-8");
+                    start += l;
                     byte topicQos = (byte) (buffer.getByte(start++) & 0x03);
-                    pairs.add(new Subscribe.TopicQosPair(topicQos, topic));
+                    pairs.add(new Subscribe.TopicQosPair(MqttMessage.Qos.valueOf(topicQos), t));
                 }
 
-                return new Subscribe(dup, qos, retain, subId, pairs);
+                Subscribe subscribe = new Subscribe();
+                return subscribe.setMessageId(subId).setTopicQosPairs(pairs);
             case MqttMessage.UNSUBACK:
                 int unsubAckId = buffer.getShort(offset) & 0xffff;
-                return new UnsubAck(unsubAckId);
+                UnsubAck unsubAck = new UnsubAck();
+                return unsubAck.setMessageId(unsubAckId);
             case MqttMessage.UNSUBSCRIBE:
                 // TODO: Maybe check for valid QOS type ?
                 int unsubId = buffer.getShort(offset) & 0xffff;
@@ -133,12 +171,13 @@ public final class MqttProtocolParser implements Handler<Buffer> {
                 int e = offset + remainingLength;
                 while (s < e) {
                     // read up the topics;
-                    int len = buffer.getShort(s) & 0xffff;
+                    int l = buffer.getShort(s) & 0xffff;
                     s += 2;
-                    topics.add(buffer.getString(s, len, "UTF-8"));
-                    s += len;
+                    topics.add(buffer.getString(s, l, "UTF-8"));
+                    s += l;
                 }
-                return new Unsubscribe(dup, qos, retain, unsubId, topics);
+                Unsubscribe unsubscribe = new Unsubscribe();
+                return unsubscribe.setMessageId(unsubId).setTopics(topics);
 
         }
         throw new IllegalArgumentException("Unknown messageType: " + messageType);
@@ -259,5 +298,4 @@ public final class MqttProtocolParser implements Handler<Buffer> {
         } while ((digit & 0x80) != 0);
         return value;
     }
-
 }

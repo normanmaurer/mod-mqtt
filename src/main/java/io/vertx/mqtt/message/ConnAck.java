@@ -1,16 +1,16 @@
 package io.vertx.mqtt.message;
 
 
-public final class ConnAck extends MqttMessage {
+public final class ConnAck extends MqttMessage<ConnAck> {
 
-    private final Connect.ConnectReturnCode code;
+    private Connect.ConnectReturnCode code;
 
-    public ConnAck(boolean dup, byte qos, boolean retain, Connect.ConnectReturnCode code) {
-        super(dup, qos, retain);
+    public ConnAck setReturnCode(Connect.ConnectReturnCode code) {
         this.code = code;
+        return this;
     }
 
-    public Connect.ConnectReturnCode connectReturnCode() {
+    public Connect.ConnectReturnCode getReturnCode() {
         return code;
     }
 

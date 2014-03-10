@@ -1,6 +1,6 @@
 package io.vertx.mqtt.message;
 
-public abstract class MqttMessage {
+public abstract class MqttMessage<T extends MqttMessage> {
 
     public static final byte CONNECT = 1;
     public static final byte CONNACK = 2;
@@ -17,29 +17,56 @@ public abstract class MqttMessage {
     public static final byte PINGRESP = 13;
     public static final byte DISCONNECT = 14;
 
-    private final boolean dup;
-    private final byte qos;
-    private final boolean retain;
+    public enum Qos {
+        OST_ONE,
+        LEAST_ONE,
+        EXACTLY_ONCE,
+        RESERVED;
 
-    protected MqttMessage(boolean dup, byte qos,boolean retain) {
-        this.dup = dup;
-        this.qos = qos;
-        this.retain = retain;
+        public static Qos valueOf(byte qos) {
+            switch (qos) {
+                case 0:
+                    return OST_ONE;
+                case 1:
+                    return LEAST_ONE;
+                case 2:
+                    return EXACTLY_ONCE;
+                case 3:
+                    return RESERVED;
+                default:
+                    throw new IllegalArgumentException("Unknown qos of value: " + qos);
+            }
+        }
     }
 
-    protected MqttMessage() {
-        this(false, (byte) -1, false);
-    }
+    private boolean dup;
+    private Qos qos;
+    private boolean retain;
 
     public boolean isDup() {
         return dup;
     }
 
-    public byte qos() {
+    public T setDup(boolean dup) {
+        this.dup = dup;
+        return (T) this;
+    }
+
+    public Qos getQos() {
         return qos;
+    }
+
+    public T setQos(Qos qos) {
+        this.qos = qos;
+        return (T) this;
     }
 
     public boolean isRetain() {
         return retain;
+    }
+
+    public T setRetain(boolean retain) {
+        this.retain = retain;
+        return (T) this;
     }
 }

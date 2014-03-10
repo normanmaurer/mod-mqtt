@@ -1,6 +1,6 @@
 package io.vertx.mqtt.message;
 
-public final class Connect extends MqttMessage {
+public final class Connect extends MqttMessage<Connect> {
     private String protocolName;
     private byte procotolVersion;
     private boolean cleanSessionFlag;
@@ -16,120 +16,130 @@ public final class Connect extends MqttMessage {
     private String willtopic;
     private String willMessage;
 
-    public Connect() {
-        super(false, (byte) -1, false);
-    }
-
     public boolean isCleanSessionFlag() {
         return cleanSessionFlag;
     }
 
-    public void setCleanSessionFlag(boolean cleanSessionFlag) {
+    public Connect setCleanSessionFlag(boolean cleanSessionFlag) {
         this.cleanSessionFlag = cleanSessionFlag;
+        return this;
     }
 
     public int getKeepAlive() {
         return keepAlive;
     }
 
-    public void setKeepAlive(int keepAlive) {
+    public Connect setKeepAlive(int keepAlive) {
         this.keepAlive = keepAlive;
+        return this;
     }
 
     public boolean isPasswordFlag() {
         return passwordFlag;
     }
 
-    public void setPasswordFlag(boolean passwordFlag) {
+    public Connect setPasswordFlag(boolean passwordFlag) {
         this.passwordFlag = passwordFlag;
+        return this;
     }
 
     public byte getProcotolVersion() {
         return procotolVersion;
     }
 
-    public void setProcotolVersion(byte procotolVersion) {
+    public Connect setProcotolVersion(byte procotolVersion) {
         this.procotolVersion = procotolVersion;
+        return this;
     }
 
     public String getProtocolName() {
         return protocolName;
     }
 
-    public void setProtocolName(String protocolName) {
+    public Connect setProtocolName(String protocolName) {
         this.protocolName = protocolName;
+        return this;
     }
 
     public boolean isUserFlag() {
         return userFlag;
     }
 
-    public void setUserFlag(boolean userFlag) {
+    public Connect setUserFlag(boolean userFlag) {
         this.userFlag = userFlag;
+        return this;
     }
 
     public boolean isWillFlag() {
         return willFlag;
     }
 
-    public void setWillFlag(boolean willFlag) {
+    public Connect setWillFlag(boolean willFlag) {
         this.willFlag = willFlag;
+        return this;
     }
 
     public byte getWillQos() {
         return willQos;
     }
 
-    public void setWillQos(byte willQos) {
+    public Connect setWillQos(byte willQos) {
         this.willQos = willQos;
+        return this;
     }
 
     public boolean isWillRetain() {
         return willRetain;
     }
 
-    public void setWillRetain(boolean willRetain) {
+    public Connect setWillRetain(boolean willRetain) {
         this.willRetain = willRetain;
+        return this;
     }
 
     public String getPassword() {
         return password;
     }
 
-    public void setPassword(String password) {
+    public Connect setPassword(String password) {
         this.password = password;
+        return this;
     }
 
     public String getUsername() {
         return username;
     }
 
-    public void setUsername(String username) {
+    public Connect setUsername(String username) {
         this.username = username;
+        return this;
     }
 
     public String getClientId() {
         return clientId;
     }
 
-    public void setClientID(String clientID) {
+    public Connect setClientID(String clientID) {
         this.clientId = clientId;
+        return this;
     }
 
     public String getWillTopic() {
         return willtopic;
     }
 
-    public void setWillTopic(String topic) {
+    public Connect setWillTopic(String topic) {
         this.willtopic = topic;
+        return this;
     }
 
     public String getWillMessage() {
         return willMessage;
     }
 
-    public void setWillMessage(String willMessage) {
+    public Connect setWillMessage(String willMessage) {
         this.willMessage = willMessage;
+        return this;
     }
 
     public static enum ConnectReturnCode {

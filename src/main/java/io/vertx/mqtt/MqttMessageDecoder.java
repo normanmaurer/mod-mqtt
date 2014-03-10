@@ -21,7 +21,7 @@ import org.vertx.java.core.buffer.Buffer;
 import java.util.ArrayList;
 import java.util.List;
 
-public final class MqttProtocolParser implements Handler<Buffer> {
+public final class MqttMessageDecoder implements Handler<Buffer> {
     private static final Disconnect DISCONNECT = new Disconnect();
     private static final PingReq PING_REQ = new PingReq();
     private static final PingResp PING_RESP = new PingResp();
@@ -35,7 +35,7 @@ public final class MqttProtocolParser implements Handler<Buffer> {
     private Buffer received;
     private int offset;
 
-    MqttProtocolParser(Handler<MqttMessage> handler) {
+    MqttMessageDecoder(Handler<MqttMessage> handler) {
         this.handler = handler;
     }
 
@@ -124,7 +124,8 @@ public final class MqttProtocolParser implements Handler<Buffer> {
                 return publish;
             case MqttMessage.PUBREC:
                 int reqId = buffer.getShort(offset) & 0xffff;
-                return new PubReq(reqId);
+                PubReq pubReq = new PubReq();
+                pubReq.setMessageId(reqId);
             case MqttMessage.PUBREL:
                 int relId = buffer.getShort(offset) & 0xffff;
                 PubRel rel = new PubRel();

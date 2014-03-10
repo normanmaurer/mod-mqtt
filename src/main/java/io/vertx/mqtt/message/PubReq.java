@@ -1,14 +1,5 @@
 package io.vertx.mqtt.message;
 
-public final class PubReq extends MqttMessage {
+public final class PubReq extends MqttIdBasedMessage<PubReq> {
 
-    private final Integer messageId;
-
-    public PubReq(int messageId) {
-        this.messageId = messageId;
-    }
-
-    public int messageId() {
-        return messageId;
-    }
 }
